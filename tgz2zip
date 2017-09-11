@@ -22,14 +22,18 @@ normalize() {
 
 #Show help and quit.
 myhelp() {
-    echo "USAGE: tgz2zip wonderland.tgz [middle-earth.tar.bzip2]" >&2
+    echo "USAGE: tgz2zip [-7] wonderland.tgz [middle-earth.tar.bzip2]" >&2
     exit 0
 }
 
-while getopts :h OPTION
+outformat="zip"
+
+while getopts ":h:7:" OPTION
 do
     case $OPTION in
         h) myhelp
+            ;;
+        7) outformat="7z"
             ;;
         \?) echo "Illegal option -- $OPTARG" >&2
             exit -1
@@ -48,6 +52,9 @@ do
     trap "rm -rf '$unpackdir'" EXIT INT HUP TERM
 
     case "$infile" in
+        -*)
+            continue
+            ;;
          *.tgz)
             tar -C "$unpackdir" -xzf "$infile" >/dev/null
             check_errs $?
@@ -68,6 +75,10 @@ do
             check_errs $?
             outfile=${infile%.tar.bzip2}
             ;;
+        *.rar)
+            unrar x "$infile" "$unpackdir"
+            outfile=${infile%.rar}
+            ;;
         *)
             echo "Unrecognized input format" >&2
             exit -1
@@ -75,7 +86,7 @@ do
     esac
     outfile=`normalize $outfile`
     
-    outfile="${outfile}.zip"
+    outfile="${outfile}.${outformat}"
 
     if [ -e $outfile ] ; then
         echo "Overwriting $outfile" >&2
@@ -83,7 +94,11 @@ do
     fi
     
     pushd "$unpackdir" > /dev/null
-    zip -r "$outfile" . > /dev/null
+    if [ "$outformat" = "7z" ] ; then
+       7z a -r "$outfile" . > /dev/null
+    else
+        zip -r "$outfile" . > /dev/null
+    fi
     check_errs $?
     popd > /dev/null
     rm $infile
