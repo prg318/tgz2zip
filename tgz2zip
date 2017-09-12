@@ -15,7 +15,7 @@ normalize() {
     dir=`dirname $dir`
     pushd $dir > /dev/null
     dir=`pwd`
-    popd > /dev/null 2&>1
+    popd > /dev/null 
     fname=`basename $1`    
     echo "$dir/$fname"
 }
